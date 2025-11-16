@@ -594,7 +594,8 @@ body {
   line-height: 1.45;
   margin-bottom: 0.6rem;
   display: -webkit-box;
-  -webkit-line-clamp: 3; 
+  -webkit-line-clamp: 3;
+  line-clamp: 3; /* Standard property for modern browsers */
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -615,7 +616,10 @@ body {
   .projects-grid { grid-auto-rows: auto; } /* mobile: let rows size naturally */
   .project-card { height: auto; }
   .project-body { padding: 0.9rem; }
-  .project-desc { -webkit-line-clamp: 4; }
+  .project-desc { 
+    -webkit-line-clamp: 4;
+    line-clamp: 4; /* Standard property */
+  }
 }
 
 /* ============================================
