@@ -1,150 +1,102 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 
 export default function Hero() {
   const containerRef = useRef(null)
-  const sceneRef = useRef(null)
-  const mouseRef = useRef({ x: 0, y: 0 })
+  const [roleIndex, setRoleIndex] = useState(0)
 
+  const roles = [
+    'Software Engineer Intern @ NMA Software',
+    'Full-Stack Developer',
+    'React.js & Next.js Developer',
+    'Java Spring Boot & NestJS Engineer',
+    'BSc (Hons) Computer Science Undergrad'
+  ]
+
+  // Role cycling interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRoleIndex(prev => (prev + 1) % roles.length)
+    }, 2800)
+    return () => clearInterval(interval)
+  }, [roles.length])
+
+  // Three.js Interactive Starfield & Constellation
   useEffect(() => {
     if (!containerRef.current) return
 
     const scene = new THREE.Scene()
-    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000)
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000)
+    camera.position.z = 28
+
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
-    
     renderer.setSize(window.innerWidth, window.innerHeight)
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
     renderer.setClearColor(0x000000, 0)
     containerRef.current.appendChild(renderer.domElement)
 
-    camera.position.z = 6
+    // Particle System (Cyber Constellation)
+    const particleCount = 220
+    const geometry = new THREE.BufferGeometry()
+    const positions = new Float32Array(particleCount * 3)
+    const scales = new Float32Array(particleCount)
+    const velocities = []
 
-    // ===== Create main rotating cube (scaled uniformly) =====
-    const geometry = new THREE.BoxGeometry(1.2, 1.2, 1.2)
-    const material = new THREE.MeshPhongMaterial({ 
-      color: 0x2c6bd6, 
-      emissive: 0x1a3f7a,
-      shininess: 100,
-      wireframe: false
-    })
-    const cube = new THREE.Mesh(geometry, material)
-    cube.position.set(0, 0, 0)
-    scene.add(cube)
+    for (let i = 0; i < particleCount; i++) {
+      const i3 = i * 3
+      positions[i3] = (Math.random() - 0.5) * 55
+      positions[i3 + 1] = (Math.random() - 0.5) * 35
+      positions[i3 + 2] = (Math.random() - 0.5) * 30
 
-    // ===== Create floating sphere (light blue variant) =====
-    const sphereGeom = new THREE.SphereGeometry(0.8, 32, 32)
-    const sphereMat = new THREE.MeshPhongMaterial({ 
-      color: 0x4da6ff, 
-      emissive: 0x2c5aa0,
-      shininess: 80
-    })
-    const sphere = new THREE.Mesh(sphereGeom, sphereMat)
-    sphere.position.x = 2.5
-    scene.add(sphere)
-
-    // ===== Create rotating torus (cyan light blue) =====
-    const torusGeom = new THREE.TorusGeometry(1.0, 0.35, 16, 100)
-    const torusMat = new THREE.MeshPhongMaterial({ 
-      color: 0x00d4ff,
-      emissive: 0x0088aa,
-      shininess: 100
-    })
-    const torus = new THREE.Mesh(torusGeom, torusMat)
-    torus.position.x = -2.5
-    scene.add(torus)
-
-    // ===== Create octahedron (soft light blue) =====
-    const octaGeom = new THREE.OctahedronGeometry(0.8)
-    const octaMat = new THREE.MeshPhongMaterial({
-      color: 0x5eb3f6,
-      emissive: 0x2b7fd9,
-      shininess: 90
-    })
-    const octahedron = new THREE.Mesh(octaGeom, octaMat)
-    octahedron.position.y = 2.0
-    scene.add(octahedron)
-
-    // ===== Create particle system =====
-    const particleCount = 80
-    const particleGeom = new THREE.BufferGeometry()
-    const particlePositions = new Float32Array(particleCount * 3)
-    
-    for (let i = 0; i < particleCount * 3; i += 3) {
-      particlePositions[i] = (Math.random() - 0.5) * 12
-      particlePositions[i + 1] = (Math.random() - 0.5) * 12
-      particlePositions[i + 2] = (Math.random() - 0.5) * 12
+      scales[i] = Math.random() * 0.8 + 0.4
+      velocities.push({
+        x: (Math.random() - 0.5) * 0.015,
+        y: (Math.random() - 0.5) * 0.015,
+        z: (Math.random() - 0.5) * 0.01
+      })
     }
-    
-    particleGeom.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3))
-    // Particle (circle) color set to dark blue for a more professional look
-    const particleMat = new THREE.PointsMaterial({ 
-      color: 0x0b2540, // dark blue
-      size: 0.08,
+
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+
+    // Soft glowing cyan/blue particle material
+    const material = new THREE.PointsMaterial({
+      color: 0x38bdf8,
+      size: 0.28,
       transparent: true,
-      opacity: 0.65
+      opacity: 0.75,
+      blending: THREE.AdditiveBlending
     })
-    const particles = new THREE.Points(particleGeom, particleMat)
-    scene.add(particles)
 
-    // ===== Advanced lighting (updated to light blue tones) =====
-    const light1 = new THREE.PointLight(0xffffff, 1.2)
-    light1.position.set(5, 5, 5)
-    scene.add(light1)
+    const pointCloud = new THREE.Points(geometry, material)
+    scene.add(pointCloud)
 
-    const light2 = new THREE.PointLight(0x4da6ff, 0.9)
-    light2.position.set(-5, -3, 5)
-    scene.add(light2)
+    // Dynamic geometric ring in the background for depth
+    const ringGeom = new THREE.TorusGeometry(12, 0.08, 16, 100)
+    const ringMat = new THREE.MeshBasicMaterial({
+      color: 0x6366f1,
+      transparent: true,
+      opacity: 0.2,
+      wireframe: true
+    })
+    const ringMesh = new THREE.Mesh(ringGeom, ringMat)
+    ringMesh.position.set(10, -2, -10)
+    ringMesh.rotation.x = Math.PI / 3
+    scene.add(ringMesh)
 
-    const light3 = new THREE.PointLight(0x5eb3f6, 0.7)
-    light3.position.set(0, 5, -5)
-    scene.add(light3)
+    // Mouse Parallax
+    let targetMouseX = 0
+    let targetMouseY = 0
+    let currentMouseX = 0
+    let currentMouseY = 0
 
-    const ambientLight = new THREE.AmbientLight(0x404040, 1.8)
-    scene.add(ambientLight)
-
-    // ===== Mouse tracking =====
-    const onMouseMove = (event) => {
-      mouseRef.current.x = (event.clientX / window.innerWidth) * 2 - 1
-      mouseRef.current.y = -(event.clientY / window.innerHeight) * 2 + 1
+    const handleMouseMove = (event) => {
+      targetMouseX = (event.clientX / window.innerWidth - 0.5) * 2
+      targetMouseY = (event.clientY / window.innerHeight - 0.5) * 2
     }
-    window.addEventListener('mousemove', onMouseMove)
 
-    // ===== Animation loop =====
-    const animate = () => {
-      requestAnimationFrame(animate)
-      
-      // Rotate cube and follow mouse
-      cube.rotation.x += 0.003
-      cube.rotation.y += 0.005
-      cube.position.x += (mouseRef.current.x * 2 - cube.position.x) * 0.08
-      cube.position.y += (mouseRef.current.y * 2 - cube.position.y) * 0.08
-      
-      // Animate sphere
-      sphere.rotation.y -= 0.004
-      sphere.position.x = 2.5 + Math.sin(Date.now() * 0.0005) * 0.6
-      sphere.position.y = Math.cos(Date.now() * 0.0003) * 0.5 + mouseRef.current.y * 1.5
-      
-      // Animate torus
-      torus.rotation.x += 0.002
-      torus.rotation.y += 0.004
-      torus.position.z = Math.sin(Date.now() * 0.0004) * 0.8
-      torus.position.x = -2.5 + mouseRef.current.x * 1.5
-      
-      // Animate octahedron
-      octahedron.rotation.x += 0.004
-      octahedron.rotation.z += 0.003
-      octahedron.position.y = 2.0 + Math.sin(Date.now() * 0.0005) * 0.4
-      octahedron.position.x += (mouseRef.current.x * 1.5 - octahedron.position.x) * 0.1
-      
-      // Animate particles
-      particles.rotation.x += 0.0002
-      particles.rotation.y += 0.0003
-      
-      renderer.render(scene, camera)
-    }
-    animate()
+    window.addEventListener('mousemove', handleMouseMove)
 
-    // ===== Handle window resize =====
+    // Resize Handler
     const handleResize = () => {
       camera.aspect = window.innerWidth / window.innerHeight
       camera.updateProjectionMatrix()
@@ -152,48 +104,120 @@ export default function Hero() {
     }
     window.addEventListener('resize', handleResize)
 
-    sceneRef.current = { scene, renderer, cube, sphere, torus, octahedron, particles }
+    // Animation Loop
+    let animationFrameId
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate)
+
+      // Smooth mouse lerping
+      currentMouseX += (targetMouseX - currentMouseX) * 0.05
+      currentMouseY += (targetMouseY - currentMouseY) * 0.05
+
+      // Orbit particles gently
+      pointCloud.rotation.y += 0.0006 + currentMouseX * 0.002
+      pointCloud.rotation.x += 0.0003 + currentMouseY * 0.002
+
+      ringMesh.rotation.z += 0.001
+      ringMesh.rotation.y += 0.0008
+
+      renderer.render(scene, camera)
+    }
+    animate()
 
     return () => {
+      cancelAnimationFrame(animationFrameId)
+      window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('resize', handleResize)
-      window.removeEventListener('mousemove', onMouseMove)
       if (containerRef.current && renderer.domElement.parentNode === containerRef.current) {
         containerRef.current.removeChild(renderer.domElement)
       }
+      geometry.dispose()
+      material.dispose()
+      ringGeom.dispose()
+      ringMat.dispose()
+      renderer.dispose()
     }
   }, [])
 
   return (
     <section id="home" className="hero">
-      {/* 3D Canvas Background */}
-      <div ref={containerRef} className="hero-3d-bg" />
-      
-      {/* Hero header image with overlay */}
-      <div className="hero-header-image">
-        <img 
-          src="https://wallpaperaccess.com/full/5651982.jpg" 
-          alt="Portfolio hero background"
-          loading="lazy"
-          className="hero-image"
-        />
-        <div className="hero-image-overlay"></div>
-      </div>
+      {/* 3D Canvas Layer */}
+      <div ref={containerRef} className="hero-canvas-container" aria-hidden="true" />
 
-      {/* Hero content */}
-      <div className="container hero-inner">
-        <div className="hero-text">
-          <div className="hero-badge">👋 Welcome to my portfolio</div>
-          <h1>Lakshan Alahapperuma</h1>
-          <p className="tagline">Computer Science Undergraduate · Web Developer · Designer</p>
-          <p className="lead">
-            I craft beautiful, functional web experiences and turn ideas into elegant digital solutions. 
-            Passionate about clean code, responsive design, and creating impact through technology.
-          </p>
-          <div className="cta-row">
-            <a className="btn btn-primary" href="#projects">View My Work</a>
-            <a className="btn btn-outline" href="#contact">Get In Touch</a>
+      {/* Ambient Radial Sphere */}
+      <div className="hero-glow-sphere" aria-hidden="true" />
+
+      <div className="container">
+        <div className="hero-content">
+          {/* Status Badge */}
+          <div className="hero-status-pill">
+            <span className="status-dot-pulse" aria-hidden="true" />
+            <span>Software Engineer Intern at NMA Software</span>
           </div>
-          
+
+          {/* Headline */}
+          <h1 className="hero-title">
+            Engineering Full-Stack & <br />
+            <span className="hero-title-highlight">Enterprise Solutions</span>
+          </h1>
+
+          {/* Dynamic Role */}
+          <div className="hero-role-wrapper">
+            <span className="hero-role-prefix">Specialized in</span>
+            <span className="hero-role-badge" key={roleIndex}>
+              {roles[roleIndex]}
+            </span>
+          </div>
+
+          {/* Bio Lead */}
+          <p className="hero-lead">
+            Hi, I'm <strong>Lakshan Alahapperuma</strong>, a Software Engineer Intern at <strong>NMA Software</strong> (New York, NY) and Computer Science undergraduate at <strong>Uva Wellassa University of Sri Lanka</strong> (Dec 2023 – Dec 2027). I build high-performance web applications with React.js, Next.js, Java Spring Boot, and NestJS.
+          </p>
+
+          {/* Action CTAs */}
+          <div className="hero-actions">
+            <a href="#projects" className="btn btn-primary">
+              <span>View Featured Projects</span>
+              <svg className="btn-icon btn-icon-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
+            </a>
+
+            <a href="./resume.pdf" target="_blank" rel="noopener noreferrer" className="btn btn-outline" title="Open and Download Resume PDF">
+              <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+              </svg>
+              <span>Download Resume</span>
+            </a>
+
+            <a href="#contact" className="btn btn-outline">
+              <svg className="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <span>Get in Touch</span>
+            </a>
+          </div>
+
+          {/* Quick Metrics */}
+          <div className="hero-stats-grid">
+            <div className="hero-stat-item">
+              <span className="stat-number">NMA Software</span>
+              <span className="stat-label">Software Engineer Intern</span>
+            </div>
+            <div className="hero-stat-item">
+              <span className="stat-number">BSc (Hons) CS</span>
+              <span className="stat-label">Uva Wellassa Univ ('23–'27)</span>
+            </div>
+            <div className="hero-stat-item">
+              <span className="stat-number">Full-Stack</span>
+              <span className="stat-label">Spring Boot · React · Next · Nest</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>
