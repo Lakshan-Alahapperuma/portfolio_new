@@ -94,7 +94,15 @@ export default function Hero() {
       targetMouseY = (event.clientY / window.innerHeight - 0.5) * 2
     }
 
+    const handleTouchMove = (event) => {
+      if (event.touches && event.touches[0]) {
+        targetMouseX = (event.touches[0].clientX / window.innerWidth - 0.5) * 2
+        targetMouseY = (event.touches[0].clientY / window.innerHeight - 0.5) * 2
+      }
+    }
+
     window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('touchmove', handleTouchMove, { passive: true })
 
     // Resize Handler
     const handleResize = () => {
@@ -127,6 +135,7 @@ export default function Hero() {
     return () => {
       cancelAnimationFrame(animationFrameId)
       window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('touchmove', handleTouchMove)
       window.removeEventListener('resize', handleResize)
       if (containerRef.current && renderer.domElement.parentNode === containerRef.current) {
         containerRef.current.removeChild(renderer.domElement)
